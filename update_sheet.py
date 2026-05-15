@@ -1,5 +1,5 @@
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
 import pandas as pd
 import requests
 import zipfile
@@ -32,14 +32,26 @@ if not gcp_creds_raw:
     exit(1)
 
 try:
+    # 1. Parse JSON
     creds_dict = safe_json_parse(gcp_creds_raw, "GCP_CREDENTIALS Secret")
     
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    # 2. Modern Authentication using google-auth
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets"
+    ]
+    
+    # google-auth is more robust than oauth2client for PEM parsing
+    creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
-    print("Google Sheets API authorized successfully.")
+    
+    print("SUCCESS: Google Sheets API authorized successfully.")
 except Exception as e:
     print(f"CRITICAL ERROR during initialization: {e}")
+    # Additional hint for PEM errors
+    if "DECODER routines" in str(e) or "PEM" in str(e):
+        print("HINT: This usually means your private_key in the JSON is malformed. Ensure newlines are escaped as \\n and no literal line breaks exist.")
     exit(1)
 
 # अपनी गूगल शीट की ID यहाँ डालें
@@ -72,7 +84,7 @@ def fetch_bhavcopy_for_date(date_obj):
                 with z.open(csv_filename) as f:
                     df = pd.read_csv(f)
                     
-                    # Column Mapping (Handling both old and new formats)
+                    # Column Mapping
                     sym_col = 'TckrSymb' if 'TckrSymb' in df.columns else 'SYMBOL'
                     close_col = 'ClsPric' if 'ClsPric' in df.columns else 'CLOSE'
                     series_col = 'SctySrs' if 'SctySrs' in df.columns else 'SERIES'

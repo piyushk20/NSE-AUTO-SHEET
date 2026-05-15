@@ -22,7 +22,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Libraries
-        run: pip install gspread oauth2client pandas requests
+        run: pip install gspread google-auth pandas requests
 
       - name: Run Python Script
         env:
