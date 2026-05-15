@@ -27,8 +27,14 @@ def safe_json_parse(text, source_name="API"):
 print("Initializing script and validating environment...")
 
 gcp_creds_raw = os.getenv('GCP_CREDENTIALS')
+spreadsheet_id = os.getenv('SPREADSHEET_ID')
+
 if not gcp_creds_raw:
     print("CRITICAL ERROR: GCP_CREDENTIALS environment variable is not set.")
+    exit(1)
+
+if not spreadsheet_id:
+    print("CRITICAL ERROR: SPREADSHEET_ID environment variable is not set.")
     exit(1)
 
 try:
@@ -54,11 +60,9 @@ except Exception as e:
         print("HINT: This usually means your private_key in the JSON is malformed. Ensure newlines are escaped as \\n and no literal line breaks exist.")
     exit(1)
 
-# अपनी गूगल शीट की ID यहाँ डालें
-spreadsheet_id = "1c0IsT-KcWlDHcVxkgJvScxmTEvLjpqaxAH3S5UPT8ts" 
 try:
     spreadsheet = client.open_by_key(spreadsheet_id)
-    target_worksheet_name = "top 250 stocks" # Corrected case to match actual sheet
+    target_worksheet_name = "top 250 stocks"
     
     # Check if worksheet exists, if not list available ones
     worksheets = spreadsheet.worksheets()
@@ -82,8 +86,7 @@ try:
 except Exception as e:
     print(f"CRITICAL ERROR: Could not access spreadsheet ID '{spreadsheet_id}'.")
     print(f"Details: {e}")
-    print("HINT: Ensure you have shared the Google Sheet with the Service Account email:")
-    print("stock-updater-bot@mygeminiproject1-470618.iam.gserviceaccount.com")
+    print("HINT: Ensure you have shared the Google Sheet with your Service Account email.")
     exit(1)
 
 # --- 2. NSE UDiFF Data Fetcher ---
