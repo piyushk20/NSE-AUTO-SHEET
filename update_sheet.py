@@ -58,16 +58,24 @@ except Exception as e:
 spreadsheet_id = "1c0IsT-KcWlDHcVxkgJvScxmTEvLjpqaxAH3S5UPT8ts" 
 try:
     spreadsheet = client.open_by_key(spreadsheet_id)
-    target_worksheet_name = "Top 250 Stocks"
+    target_worksheet_name = "top 250 stocks" # Corrected case to match actual sheet
     
     # Check if worksheet exists, if not list available ones
     worksheets = spreadsheet.worksheets()
     worksheet_titles = [ws.title for ws in worksheets]
     
-    if target_worksheet_name in worksheet_titles:
-        worksheet = spreadsheet.worksheet(target_worksheet_name)
+    # Attempt to find the worksheet (case-insensitive fallback)
+    match = None
+    for title in worksheet_titles:
+        if title.strip().lower() == target_worksheet_name.lower():
+            match = title
+            break
+            
+    if match:
+        worksheet = spreadsheet.worksheet(match)
+        print(f"Connected to worksheet: {match}")
     else:
-        print(f"ERROR: Worksheet '{target_worksheet_name}' not found.")
+        print(f"ERROR: Worksheet matching '{target_worksheet_name}' not found.")
         print(f"Available worksheets: {worksheet_titles}")
         exit(1)
         
