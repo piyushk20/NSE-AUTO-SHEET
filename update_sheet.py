@@ -10,7 +10,19 @@ import json
 
 # 1. Credentials Setup
 creds_json = os.environ.get('GCP_CREDENTIALS')
-creds_dict = json.loads(creds_json)
+
+if not creds_json:
+    print("ERROR: GCP_CREDENTIALS environment variable is not set or empty.")
+    exit(1)
+
+try:
+    creds_dict = json.loads(creds_json)
+except json.JSONDecodeError as e:
+    print(f"ERROR: Failed to decode GCP_CREDENTIALS JSON. {e}")
+    # Print the first few characters to debug without exposing full secret
+    print(f"Payload starts with: {creds_json[:20]}...") 
+    exit(1)
+
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
@@ -55,8 +67,11 @@ def fetch_bhavcopy_for_date(date_obj):
                     
                     df_top = df.sort_values(by=vol_col, ascending=False).head(250)
                     return df_top[[sym_col, vol_col, close_col]].values.tolist()
+        else:
+            print(f"NSE Error: Status Code {response.status_code} for {date_str}")
         return None
-    except:
+    except Exception as e:
+        print(f"ERROR fetching data for {date_str}: {e}")
         return None
 
 # 3. Execution Logic
@@ -71,13 +86,22 @@ for i in range(5):
     data_to_insert = fetch_bhavcopy_for_date(test_date)
     if data_to_insert:
         fetched_date_str = test_date.strftime('%d-%b-%Y')
+        print(f"Found data for {fetched_date_str}")
         break
+    else:
+        print(f"No data for {test_date.strftime('%d-%b-%Y')}")
 
 # 4. Update Sheet
 if data_to_insert:
-    worksheet.batch_clear(['A2:C251'])
-    worksheet.update('A2', data_to_insert)
-    ist_now = (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime('%d-%b %H:%M')
-    status_msg = f"Data Date: {fetched_date_str} | Last Update: {ist_now} (IST)"
-    worksheet.update('K2', [[status_msg]])
-    print("SUCCESS: Sheet Updated!")
+    try:
+        worksheet.batch_clear(['A2:C251'])
+        worksheet.update('A2', data_to_insert)
+        ist_now = (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime('%d-%b %H:%M')
+        status_msg = f"Data Date: {fetched_date_str} | Last Update: {ist_now} (IST)"
+        worksheet.update('K2', [[status_msg]])
+        print("SUCCESS: Sheet Updated!")
+    except Exception as e:
+        print(f"ERROR updating sheet: {e}")
+else:
+    print("CRITICAL ERROR: No data could be fetched for the last 5 days.")
+    exit(1)
