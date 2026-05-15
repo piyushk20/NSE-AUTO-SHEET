@@ -57,9 +57,25 @@ except Exception as e:
 # अपनी गूगल शीट की ID यहाँ डालें
 spreadsheet_id = "1c0IsT-KcWlDHcVxkgJvScxmTEvLjpqaxAH3S5UPT8ts" 
 try:
-    worksheet = client.open_by_key(spreadsheet_id).worksheet("Top 250 Stocks")
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    target_worksheet_name = "Top 250 Stocks"
+    
+    # Check if worksheet exists, if not list available ones
+    worksheets = spreadsheet.worksheets()
+    worksheet_titles = [ws.title for ws in worksheets]
+    
+    if target_worksheet_name in worksheet_titles:
+        worksheet = spreadsheet.worksheet(target_worksheet_name)
+    else:
+        print(f"ERROR: Worksheet '{target_worksheet_name}' not found.")
+        print(f"Available worksheets: {worksheet_titles}")
+        exit(1)
+        
 except Exception as e:
-    print(f"ERROR: Could not open worksheet. Check spreadsheet ID and permissions. {e}")
+    print(f"CRITICAL ERROR: Could not access spreadsheet ID '{spreadsheet_id}'.")
+    print(f"Details: {e}")
+    print("HINT: Ensure you have shared the Google Sheet with the Service Account email:")
+    print("stock-updater-bot@mygeminiproject1-470618.iam.gserviceaccount.com")
     exit(1)
 
 # --- 2. NSE UDiFF Data Fetcher ---
