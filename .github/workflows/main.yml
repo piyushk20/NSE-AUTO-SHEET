@@ -1,6 +1,9 @@
 name: Update NSE Stocks to Google Sheet
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # यह समय 14:45 UTC है, जिसका मतलब भारत में रात 8:15 PM है
     - cron: '45 14 * * 1-5'
